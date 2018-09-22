@@ -1,0 +1,14 @@
+useDynLib("qrjoint")
+
+# Export all functions listed below
+export(
+  dapp,
+  dapp.simulate,
+  synthesis.dapp
+)
+
+S3method(summary, dapp)
+S3method(plot, dapp)
+
+# Import all packages listed as Imports or Depends
+import(stats, graphics, grDevices)
