@@ -1,7 +1,7 @@
 ## required R codes
 source("dapp-helper-functions.R)
 ## list of cells to analyze
-triplet.meta <- read.csv("~/Desktop/Research/Neuro/363triplets.csv")
+triplet.meta <- read.csv("363triplets.csv")
 ## local path to pull data from (set to current directory)
 local.path <- "./"
 ## if pulling data from the web
