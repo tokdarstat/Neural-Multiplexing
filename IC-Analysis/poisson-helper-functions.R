@@ -267,7 +267,7 @@ esti.Poi <- function(trials, spiketimes, frq = c(1100, 742), pos = c(24, -6), on
 }
 
 
-poi.VC <- function(fname, cell, data.path = "Data/", on.reward = TRUE,
+poi.VC <- function(fname, cell, data.path = "Data", on.reward = TRUE,
                    match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
                    start = 0, end = 600, go.by.soff = TRUE, remove.zeros = FALSE,
                    plot = TRUE){
@@ -294,7 +294,7 @@ poi.VC <- function(fname, cell, data.path = "Data/", on.reward = TRUE,
 }
 
 
-poi.JA <- function(fname, on.reward = TRUE, data.path = "Data/",
+poi.JA <- function(fname, on.reward = TRUE, data.path = "Data",
                    match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
                    start = 0, end = 600, remove.zeros = FALSE,
                    plot = TRUE){
