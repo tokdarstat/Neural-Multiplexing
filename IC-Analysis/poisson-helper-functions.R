@@ -263,11 +263,14 @@ esti.Poi <- function(trials, spiketimes, frq = c(1100, 742), pos = c(24, -6), on
   s2 <- paste(frq[2],"Hz ",pos[2],"deg ",lev,"Db ", sep = "")
   dp <- paste("Duplex: ", lev, "Db ", sep = "")
   
-  return(get.bayes.factors(Acounts, Bcounts, ABcounts, labels = c(s1, s2, dp), ...))   
+  return(poisson.tests(Acounts, Bcounts, ABcounts, labels = c(s1, s2, dp), ...))
 }
 
 
-poi.VC <- function(fname, cell, on.reward = TRUE, match.level = FALSE, AB.eqlevel = FALSE, outfile = "", start = 0, end = 600, go.by.soff = TRUE, remove.zeros = FALSE, plot = TRUE){
+poi.VC <- function(fname, cell, data.path = "Data/", on.reward = TRUE,
+                   match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
+                   start = 0, end = 600, go.by.soff = TRUE, remove.zeros = FALSE,
+                   plot = TRUE){
   
   infile1 <- paste(data.path, "/VC/", fname, ".txt", sep = "")
   trials <- read.table(infile1, col.names = c("TRIAL", "TASKID", "A_FREQ", "B_FREQ", "XA", "XB", "REWARD", "A_LEVEL", "B_LEVEL", "SOFF"))
@@ -291,7 +294,10 @@ poi.VC <- function(fname, cell, on.reward = TRUE, match.level = FALSE, AB.eqleve
 }
 
 
-poi.JA <- function(fname, on.reward = TRUE, match.level = FALSE, AB.eqlevel = FALSE, outfile = "", start = 0, end = 600, remove.zeros = FALSE, plot = TRUE){
+poi.JA <- function(fname, on.reward = TRUE, data.path = "Data/",
+                   match.level = FALSE, AB.eqlevel = FALSE, outfile = "",
+                   start = 0, end = 600, remove.zeros = FALSE,
+                   plot = TRUE){
   
   infile1 <- paste(data.path, "/JA/", fname, ".txt", sep = "")
   trials <- read.table(infile1, col.names = c("TRIAL", "TASKID", "A_FREQ", "B_FREQ", "XA", "XB", "REWARD", "A_LEVEL", "B_LEVEL"))
