@@ -1,7 +1,3 @@
-a <- 0.5; b <- 2e-10
-c1 <- 0.5; c2 <- 0.5
-#c1 <- 2; c2 <- 2;
-
 expand.grid <- function(x, y){
 	nx <- ifelse(is.null(dim(x)), length(x), nrow(x))
 	ny <- ifelse(is.null(dim(y)), length(y), nrow(y))
@@ -9,7 +5,6 @@ expand.grid <- function(x, y){
 }
 
 logsum <- function(lx) return(max(lx) + log(sum(exp(lx - max(lx)))))
-##log(exp(lx[2]) - exp(lx[1])) = lx[2] + log(1 - exp(lx[1] - lx[2])) = lx[1] + log(expm1(diff(lx)))
 logdiff <- function(lx) return(ifelse(diff(lx) < 1, lx[1] + log(expm1(diff(lx))), lx[2] + log(1 - exp(lx[1]-lx[2]))))
 bin.counter <- function(x, b) return(diff(sapply(b, function(a) sum(x <= a))))
 
@@ -39,7 +34,6 @@ test.chisq <- function(x, k){
 	obs.c <- bin.counter(x, cuts)
 	exp.c <- n / k
   return(sum((obs.c - exp.c)^2 / exp.c))
-#	return(1 - pgamma(sum((obs.c - exp.c)^2 / exp.c), max((k - 2), 1)/2, 1/2))
 }
 
 pval.chisq <- function(x){
@@ -50,7 +44,10 @@ pval.chisq <- function(x){
   return(mean(Q.samp > Q.obs))
 }
 
-get.bayes.factors <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.zeros = FALSE, plot = TRUE){
+poisson.tests <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.zeros = FALSE, plot = FALSE, gamma.pars = c(0.5, 2e-10), beta.pars = c(0.5, 0.5)){
+    
+    a <- gamma.pars[1]; b <- gamma.pars[2]
+    c1 <- beta.pars[1]; c2 <- beta.pars[2]
 
   if(remove.zeros){
     xA <- xA[xA != 0]
@@ -134,7 +131,7 @@ get.bayes.factors <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.ze
 	  n <- length(z)
 	  s <- sum(z) 
 	  rpar <- range(par)
-	  return(logdiff(pgamma(rpar, s+a, n+b, log=TRUE)) - logdiff(pgamma(rpar,a,b,log=TRUE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1)))
+	  return(logdiff(pgamma(rpar, s+a, n+b, log.p = TRUE)) - logdiff(pgamma(rpar,a,b,log.p = TRUE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1)))
 	} 
 	log.marg.ave.f <- logsum(apply(par.samp, 1, log.p, z = xAB)) - log(nsamp)
   log.marg.ave.s <- sapply(xAB, function(zz) logsum(apply(par.samp, 1, log.p, z = zz)) - log(nsamp))
@@ -149,9 +146,9 @@ get.bayes.factors <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.ze
 	  n <- length(z)
 	  s <- sum(z) 
 	  rpar <- c(max(par), Inf)
-	  term1 <- logdiff(pgamma(rpar, s+a, n+b, log=TRUE)) - logdiff(pgamma(rpar,a,b,log=TRUE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1))
+	  term1 <- logdiff(pgamma(rpar, s+a, n+b, log.p = TRUE)) - logdiff(pgamma(rpar,a,b,log.p = TRUE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1))
     rpar <- c(min(par),0)
-    term2 <- logdiff(pgamma(rpar, s+a, n+b, log=TRUE, lower=FALSE)) - logdiff(pgamma(rpar,a,b,log=TRUE,lower=FALSE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1))
+    term2 <- logdiff(pgamma(rpar, s+a, n+b, log.p = TRUE, lower.tail =  FALSE)) - logdiff(pgamma(rpar,a,b,log.p = TRUE,lower.tail =  FALSE)) - (s+a)*log(n+b) + lgamma(s+a) - sum(lgamma(z+1))
     return(logsum(c(term1, term2)))
 	} 
 	log.marg.out.f <- logsum(apply(par.samp, 1, log.pout, z = xAB)) - log(nsamp)
@@ -165,8 +162,11 @@ get.bayes.factors <- function(xA, xB, xAB, labels = c("A", "B", "AB"), remove.ze
   log.marg.dom.2 <- log.pm.ibf(xAB, a.post[2], b.post[2])
   log.marg.dom <- max(log.marg.dom.1,log.marg.dom.2)
 
-	bfs <- exp(c(log.marg.mix, log.marg.ave, log.marg.out, log.marg.dom) - log.marg.ind)
-	out <- c(lbf.pure, bfs/sum(bfs), min(pvls[1:2]), nA, nB, nAB)
+	bfs <- exp(c(mixture = log.marg.mix, intermediate = log.marg.ave, outside = log.marg.out, single = log.marg.dom) - log.marg.ind)
+	out <- list(separation.logBF = lbf.pure,
+                post.prob = bfs/sum(bfs),
+                pois.pvalue = min(pvls[1:2]),
+                samp.sizes = c(nA, nB, nAB))
   model.probs <- bfs/sum(bfs)
   models <- c("Mix", "Int", "Out", "Sing")
   win.model <- which.max(model.probs)

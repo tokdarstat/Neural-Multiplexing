@@ -1,0 +1,16 @@
+# Export all functions listed below
+export(
+  poisson.tests,
+  dapp,
+  dapp.simulate,
+  synthesis.dapp,
+  bin.counter
+)
+
+S3method(summary, dapp)
+S3method(plot, dapp)
+
+# Import all packages listed as Imports or Depends
+import(stats, graphics, grDevices)
+importFrom(BayesLogit, rpg.devroye)
+importFrom(weights, wtd.hist)

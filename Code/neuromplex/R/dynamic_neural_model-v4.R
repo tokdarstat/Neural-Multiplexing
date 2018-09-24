@@ -375,12 +375,12 @@ dapp <- function(spike.counts, lengthScale = NULL, lsPrior = NULL, hyper = list(
                 
 }
 
-summary.dapp <- function(fit, cut.width = 0.1, tilt.prior = FALSE, mesh.tilt = 0.1, nprior = fit$mcmc["nsamp"]){
-    nsamp <- fit$mcmc["nsamp"]
-    alpha.post.pred <- fit$alpha.pred
+summary.dapp <- function(object, cut.width = 0.1, tilt.prior = FALSE, mesh.tilt = 0.1, nprior = object$mcmc["nsamp"], ...){
+    nsamp <- object$mcmc["nsamp"]
+    alpha.post.pred <- object$alpha.pred
     minmax.post.pred <- apply(alpha.post.pred, 1, function(a) diff(range(a)))
     
-    sim.prior <- dapp.simulate(fit$bin.mids, fit$bin.width, lengthScale = fit$lengthScale, lsPrior = fit$lsPrio, hyper = fit$hyper, nsamp = nprior)
+    sim.prior <- dapp.simulate(length(object$bin.mids) * object$bin.width, object$bin.width, lengthScale = object$lengthScale, lsPrior = object$lsPrio, hyper = object$hyper, nsamp = nprior)
     alpha.prior.pred <- sim.prior$alpha.pred
     minmax.prior.pred <- apply(alpha.prior.pred, 1, function(a) diff(range(a)))
 
@@ -411,23 +411,24 @@ summary.dapp <- function(fit, cut.width = 0.1, tilt.prior = FALSE, mesh.tilt = 0
     
 }
 
-plot.dapp <- function(fit, add.prior = TRUE, synth.data = NULL, tilt.prior = FALSE, mesh.tilt = 0.1, nprior = fit$mcmc["nsamp"], ncurves = 10){
+plot.dapp <- function(x, add.prior = TRUE, synth.data = NULL, tilt.prior = FALSE, mesh.tilt = 0.1, nprior = x$mcmc["nsamp"], ncurves = 10, ...){
     
-    bin.mids <- fit$bin.mids
-    bin.width <- fit$bin.width
+    object <- x
+    bin.mids <- object$bin.mids
+    bin.width <- object$bin.width
     nbins <- length(bin.mids)
-    nsamp <- fit$mcmc["nsamp"]
+    nsamp <- object$mcmc["nsamp"]
     
     if(add.prior|tilt.prior){
-        sim.prior <- dapp.simulate(bin.mids, bin.width, lengthScale = fit$lengthScale, lsPrior = fit$lsPrior, hyper = fit$hyper, nsamp = nprior)
+        sim.prior <- dapp.simulate(length(bin.mids)*bin.width, bin.width, lengthScale = object$lengthScale, lsPrior = object$lsPrior, hyper = object$hyper, nsamp = nprior)
         lsprob.prior <- sim.prior$lsprob
         alpha.prior.pred <- sim.prior$alpha.pred
         minmax.prior.pred <- apply(alpha.prior.pred, 1, function(a) diff(range(a)))
     }
 
-    lsprob.post <- fit$lsprob
-    alpha.post <- fit$alpha
-    alpha.post.pred <- fit$alpha.pred
+    lsprob.post <- object$lsprob
+    alpha.post <- object$alpha
+    alpha.post.pred <- object$alpha.pred
     minmax.post.pred <- apply(alpha.post.pred, 1, function(a) diff(range(a)))
     
     if(tilt.prior){
@@ -481,8 +482,8 @@ plot.dapp <- function(fit, add.prior = TRUE, synth.data = NULL, tilt.prior = FAL
     ## lambda.A and lambda.B estimates
     
     count2rate.factor <- 1000 / bin.width
-    m.1 <- count2rate.factor * colMeans(fit$lambda.A); s.1 <- count2rate.factor * apply(fit$lambda.A, 2, sd)
-    m.2 <- count2rate.factor * colMeans(fit$lambda.B); s.2 <- count2rate.factor * apply(fit$lambda.B, 2, sd)
+    m.1 <- count2rate.factor * colMeans(object$lambda.A); s.1 <- count2rate.factor * apply(object$lambda.A, 2, sd)
+    m.2 <- count2rate.factor * colMeans(object$lambda.B); s.2 <- count2rate.factor * apply(object$lambda.B, 2, sd)
     
     plot(bin.mids, 0*bin.mids, ylim = c(0, max(max(m.1+2*s.1), max(m.2+2*s.2))), ann = FALSE, ty = "n", bty = "n")
     polygon(bin.mids[c(1:nbins, nbins:1)], c(m.1 - 2*s.1, (m.1 + 2*s.1)[nbins:1]), col = tcol("orange", .5), border = tcol("orange", .5))
@@ -527,7 +528,7 @@ plot.dapp <- function(fit, add.prior = TRUE, synth.data = NULL, tilt.prior = FAL
     ## Length-scale
     lsprobs <- rbind(colMeans(lsprob.post), colMeans(lsprob.prior))
     resp.horiz <- bin.width * nbins
-    E.swing <- 0.16 * resp.horiz / fit$lengthScale
+    E.swing <- 0.16 * resp.horiz / object$lengthScale
     swing.ix <- order(E.swing)
     dimnames(lsprobs)[[2]] <- round(E.swing, 1)
     barplot(lsprobs[,swing.ix], beside = TRUE,
@@ -548,7 +549,7 @@ plot.dapp <- function(fit, add.prior = TRUE, synth.data = NULL, tilt.prior = FAL
 
 dapp.simulate <- function(horizon = 1000, bin.width = 25, lengthScale, lsPrior = rep(1/length(lengthScale),length(lengthScale)), hyper = list(prec = c(1,1), sig0 = 1.87), nsamp = 1e3){
     
-    horizon <- bin.width * (horizon %% bin.width)
+    horizon <- bin.width * (horizon %/% bin.width)
     bin.mids <- seq(bin.width/2, horizon, bin.width)
     sig0 <- hyper$sig0
     sigSq0 <- sig0^2
@@ -556,7 +557,7 @@ dapp.simulate <- function(horizon = 1000, bin.width = 25, lengthScale, lsPrior =
     prec.b <- hyper$prec[2]
     
     nbins <- length(bin.mids)
-    if(is.missing(lengthScale)) lengthScale <- sort(0.16 * horizon / c(4, 3, 2, 1, 0.5, 0.1))
+    if(missing(lengthScale)) lengthScale <- sort(0.16 * horizon / c(4, 3, 2, 1, 0.5, 0.1))
     L <- length(lengthScale) ## number of distinct length scale values
     
     # covariance matrix of pinned GP eta
@@ -655,9 +656,13 @@ synthesis.dapp <- function(ntrials = c(10, 10, 10), time.bins = 0:1000, lambda.A
 }
 
 
-bin.counter <- function(x, b) return(diff(sapply(b, function(a) sum(x <= a))))
+## auxiliary functions
 
-logsum <- function(lx) return(max(lx) + log(sum(exp(lx - max(lx)))))
+## already defined in poisson_analysis.R
+## bin.counter <- function(x, b) return(diff(sapply(b, function(a) sum(x <= a))))
+
+## already defined in poisson_analysis.R
+## logsum <- function(lx) return(max(lx) + log(sum(exp(lx - max(lx)))))
 
 rDirichlet <- function(n, alpha){
     l <- length(alpha)
@@ -681,18 +686,18 @@ rtruncgamma <- function(n, low = 0, up = Inf, ...){
         pos2 <- pgamma(low, ...) > 0.5
         ## those with pos1 = TRUE
         if(any(pos1)){
-            lplo <- pgamma(low, ..., log = TRUE, lower = TRUE)
-            lpup <- pgamma(up, ..., log = TRUE, lower = TRUE)
+            lplo <- pgamma(low, ..., log.p = TRUE, lower.tail = TRUE)
+            lpup <- pgamma(up, ..., log.p = TRUE, lower.tail = TRUE)
             lp <- apply(cbind(lplo, log(unifs) + lpup + log1p(-exp(lplo - lpup))), 1, logsum)
-            vals[pos1] <- qgamma(lp, ..., log.p = TRUE, lower = TRUE)[pos1]
+            vals[pos1] <- qgamma(lp, ..., log.p = TRUE, lower.tail = TRUE)[pos1]
         }
         ## now those with pos2 = TRUE
         if(any(pos2)){
-            lplo <- pgamma(low, ..., log = TRUE, lower = FALSE)
-            lpup <- pgamma(up, ..., log = TRUE, lower = FALSE)
+            lplo <- pgamma(low, ..., log.p = TRUE, lower.tail = FALSE)
+            lpup <- pgamma(up, ..., log.p = TRUE, lower.tail = FALSE)
             lp <- lplo + log1p(unifs * expm1(lpup - lplo))
             lp <- apply(cbind(lplo, log(unifs) + lplo + log1p(-exp(lpup - lplo))), 1, logsum)
-            vals[pos2] <- qgamma(lp, ..., log.p = TRUE, lower = FALSE)[pos2]
+            vals[pos2] <- qgamma(lp, ..., log.p = TRUE, lower.tail = FALSE)[pos2]
         }
     }
     return(vals)
@@ -703,34 +708,34 @@ rtruncbeta <- function(n, low = 0, up = Inf, ...){
     vals <- rep(NA, n)
     pos <- (pbeta(low, ...) < 0.5)
     ## those with pos = TRUE
-    lplo <- pbeta(low, ..., log = TRUE, lower = TRUE)
-    lpup <- pbeta(up, ..., log = TRUE, lower = TRUE)
+    lplo <- pbeta(low, ..., log.p = TRUE, lower.tail = TRUE)
+    lpup <- pbeta(up, ..., log.p = TRUE, lower.tail = TRUE)
     lp <- lplo + log1p(unifs * expm1(lpup - lplo))
-    vals[pos] <- qbeta(lp, ..., log.p = TRUE, lower = TRUE)[pos]
+    vals[pos] <- qbeta(lp, ..., log.p = TRUE, lower.tail = TRUE)[pos]
     ## now those with pos = FALSE
-    lplo <- pbeta(low, ..., log = TRUE, lower = FALSE)
-    lpup <- pbeta(up, ..., log = TRUE, lower = FALSE)
+    lplo <- pbeta(low, ..., log.p = TRUE, lower.tail = FALSE)
+    lpup <- pbeta(up, ..., log.p = TRUE, lower.tail = FALSE)
     lp <- lplo + log1p(unifs * expm1(lpup - lplo))
-    vals[!pos] <- qbeta(lp, ..., log.p = TRUE, lower = FALSE)[!pos]
+    vals[!pos] <- qbeta(lp, ..., log.p = TRUE, lower.tail = FALSE)[!pos]
     return(vals)
 }
 
-smoogam <- function(x){
-    T <- nrow(x)
-    n <- ncol(x)
-    if(T > 1){
-        x.dd <- data.frame(cts = c(x), time = rep(1:T, n))
-        x.gam <- gam(cts ~ s(time, bs = "ad"), data = x.dd, family = poisson(link = "log"))
-        x.pred <- predict(x.gam, data.frame(cts = NA, time = 1:T), se.fit = TRUE)
-        mu <- x.pred$fit; sig <- x.pred$se.fit
-    } else {
-        mu <- log(mean(c(x))); sig <- log(sd(c(x)))
-    }
-    firingrate.mean <- exp(mu)
-    firingrate.vari <- expm1(sig^2/2) * firingrate.mean^2
-    return(list(a = 1 / expm1(sig^2/2), b = 1/(expm1(sig^2/2) * firingrate.mean),
-    mean = firingrate.mean, vari = firingrate.vari))
-}
+#smoogam <- function(x){
+#    T <- nrow(x)
+#    n <- ncol(x)
+#    if(T > 1){
+#        x.dd <- data.frame(cts = c(x), time = rep(1:T, n))
+#        x.gam <- gam(cts ~ s(time, bs = "ad"), data = x.dd, family = poisson(link = "log"))
+#        x.pred <- predict(x.gam, data.frame(cts = NA, time = 1:T), se.fit = TRUE)
+#        mu <- x.pred$fit; sig <- x.pred$se.fit
+#    } else {
+#        mu <- log(mean(c(x))); sig <- log(sd(c(x)))
+#    }
+#    firingrate.mean <- exp(mu)
+#    firingrate.vari <- expm1(sig^2/2) * firingrate.mean^2
+#    return(list(a = 1 / expm1(sig^2/2), b = 1/(expm1(sig^2/2) * firingrate.mean),
+#    mean = firingrate.mean, vari = firingrate.vari))
+#}
 
 drop.item <- function(x, j) return(x[-match(j, x, nomatch = length(x) + 1)])
 

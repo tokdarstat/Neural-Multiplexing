@@ -1,0 +1,10 @@
+bin.counter             Bin Counting
+dapp                    Dynamic Admixture of Poisson Process
+dapp.simulate           Simulate from Dynamic Admixture of Poisson
+                        Process
+plot.dapp               Plotting Method for Dynamic Admixture of
+                        Poisson Process
+poisson.tests           Poisson Tests for Whole Trial Spike Counts
+summary.dapp            Summary Method for Dynamic Admixture of Poisson
+                        Process
+synthesis.dapp          Simulate Multiplexing Data for DAPP Analysis
