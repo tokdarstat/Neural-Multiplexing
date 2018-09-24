@@ -8,7 +8,7 @@ fnames.ja230.int <- scan("JA230_list_randomly_interleaved.txt", "a")
 fnames.vc <- scan("VC_extended_list.txt", "a")
 
 ## Codes needed
-source("ICdualsound_analysis-new.R")
+source("poisson-helper-functions.R")
 require(parallel)
 
 pdf(height = 8, width = 5, file = "poi-ja-600-zero-removed.pdf")
